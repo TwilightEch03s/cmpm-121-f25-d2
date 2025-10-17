@@ -85,6 +85,18 @@ canvas.addEventListener("mouseleave", () => {
 // Setup redo lines if user wants to undo/redo
 const redo_lines: { x: number; y: number }[][] = [];
 
+// Clear button
+const clearButton = document.createElement("button");
+clearButton.textContent = "Clear";
+document.body.appendChild(clearButton);
+
+clearButton.addEventListener("click", () => {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  points.length = 0;
+  redo_lines.length = 0;
+  canvas.dispatchEvent(new Event("drawing-changed"));
+});
+
 // Undo button
 const undoButton = document.createElement("button");
 undoButton.textContent = "Undo";
