@@ -81,3 +81,30 @@ canvas.addEventListener("mouseup", () => {
 canvas.addEventListener("mouseleave", () => {
   drawing = false;
 });
+
+// Setup redo lines if user wants to undo/redo
+let redo_lines: { x: number; y: number }[][] = [];
+
+// Undo button
+const undoButton = document.createElement("button");
+undoButton.textContent = "Undo";
+document.body.appendChild(undoButton);
+
+undoButton.addEventListener("click", () => {
+  if (points.length > 0) {
+    redo_lines.push(points.pop()!);
+    redraw();
+  }
+});
+
+// Redo button
+const redoButton = document.createElement("button");
+redoButton.textContent = "Redo";
+document.body.appendChild(redoButton);
+
+redoButton.addEventListener("click", () => {
+  if (redo_lines.length > 0) {
+    points.push(redo_lines.pop()!);
+    redraw();
+  }
+});
