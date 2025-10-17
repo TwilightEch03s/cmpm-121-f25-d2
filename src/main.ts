@@ -83,7 +83,7 @@ canvas.addEventListener("mouseleave", () => {
 });
 
 // Setup redo lines if user wants to undo/redo
-let redo_lines: { x: number; y: number }[][] = [];
+const redo_lines: { x: number; y: number }[][] = [];
 
 // Undo button
 const undoButton = document.createElement("button");
