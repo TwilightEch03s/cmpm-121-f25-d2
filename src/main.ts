@@ -1,5 +1,42 @@
 import "./style.css";
 
+// Sticker interface
+interface StickerDisplay extends Display {
+  emoji: string;
+}
+
+// Sticker object
+function Sticker(x: number, y: number, emoji: string): StickerDisplay {
+  let position = { x, y };
+  return {
+    thickness: 1,
+    emoji,
+    drag(newX, newY) {
+      position = { x: newX, y: newY };
+    },
+    display(ctx) {
+      ctx.font = "32px serif";
+      ctx.fillText(emoji, position.x - 16, position.y + 16);
+    },
+    getPoints() {
+      return [position];
+    },
+  };
+}
+
+// Sticker preview
+function StickerPreview(x: number, y: number, emoji: string): ToolPreview {
+  return {
+    display(ctx) {
+      ctx.save();
+      ctx.globalAlpha = 0.4;
+      ctx.font = "32px serif";
+      ctx.fillText(emoji, x - 16, y + 16);
+      ctx.restore();
+    },
+  };
+}
+
 // Display Interface
 interface Display {
   drag(x: number, y: number): void;
@@ -39,6 +76,9 @@ function MarkerLine(x: number, y: number, thickness: number): Display {
 interface ToolPreview {
   display(ctx: CanvasRenderingContext2D): void;
 }
+
+// Track current sticker
+let current_sticker: string | null = null;
 
 function MarkerPreview(x: number, y: number, thickness: number): ToolPreview {
   return {
@@ -118,11 +158,18 @@ canvas.addEventListener("tool-moved", () => {
 
 // Mouse clicked = draw
 canvas.addEventListener("mousedown", (event: MouseEvent) => {
-  drawing = true;
-  current_line = MarkerLine(event.offsetX, event.offsetY, current_thickness);
-  lines.push(current_line);
-  current_tool_preview = null;
-  canvas.dispatchEvent(new Event("drawing-changed"));
+  if (current_sticker) {
+    const sticker = Sticker(event.offsetX, event.offsetY, current_sticker);
+    lines.push(sticker);
+    current_tool_preview = null;
+    canvas.dispatchEvent(new Event("drawing-changed"));
+  } else {
+    drawing = true;
+    current_line = MarkerLine(event.offsetX, event.offsetY, current_thickness);
+    lines.push(current_line);
+    current_tool_preview = null;
+    canvas.dispatchEvent(new Event("drawing-changed"));
+  }
 });
 
 // Mouse move = draw line at mouse postion
@@ -130,6 +177,13 @@ canvas.addEventListener("mousemove", (event: MouseEvent) => {
   if (drawing && current_line) {
     current_line.drag(event.offsetX, event.offsetY);
     canvas.dispatchEvent(new Event("drawing-changed"));
+  } else if (current_sticker) {
+    current_tool_preview = StickerPreview(
+      event.offsetX,
+      event.offsetY,
+      current_sticker,
+    );
+    canvas.dispatchEvent(new Event("tool-moved"));
   } else {
     current_tool_preview = MarkerPreview(
       event.offsetX,
@@ -211,6 +265,8 @@ toolsContainer.appendChild(thickButton);
 // Tool switching
 function selectTool(thickness: number, selectedButton: HTMLButtonElement) {
   current_thickness = thickness;
+  current_sticker = null;
+  current_tool_preview = null;
   [thinButton, thickButton].forEach((btn) =>
     btn.classList.remove("selectedTool")
   );
@@ -223,4 +279,23 @@ thinButton.addEventListener("click", () => {
 
 thickButton.addEventListener("click", () => {
   selectTool(6, thickButton);
+});
+
+// Add sticker buttons
+const stickerContainer = document.createElement("div");
+stickerContainer.className = "sticker-container";
+document.body.appendChild(stickerContainer);
+
+const stickers = ["🌼", "🌸", "🌺"];
+stickers.forEach((emoji) => {
+  const btn = document.createElement("button");
+  btn.textContent = emoji;
+  btn.classList.add("stickerButton");
+  stickerContainer.appendChild(btn);
+
+  btn.addEventListener("click", () => {
+    current_sticker = emoji;
+    current_tool_preview = null;
+    canvas.dispatchEvent(new Event("tool-moved"));
+  });
 });
