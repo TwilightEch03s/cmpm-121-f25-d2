@@ -5,13 +5,15 @@ interface Display {
   drag(x: number, y: number): void;
   display(ctx: CanvasRenderingContext2D): void;
   getPoints(): { x: number; y: number }[];
+  thickness: number;
 }
 
 //Make a marker line
-function MarkerLine(x: number, y: number): Display {
+function MarkerLine(x: number, y: number, thickness: number): Display {
   const points = [{ x, y }];
 
   return {
+    thickness,
     drag(newX, newY) {
       points.push({ x: newX, y: newY });
     },
@@ -24,6 +26,7 @@ function MarkerLine(x: number, y: number): Display {
       for (let i = 1; i < points.length; i++) {
         ctx.lineTo(points[i].x, points[i].y);
       }
+      ctx.lineWidth = thickness;
       ctx.stroke();
     },
     getPoints() {
@@ -53,12 +56,12 @@ if (!ctx) {
   throw new Error("Unable to get 2D context");
 }
 
-ctx.lineWidth = 2;
 ctx.lineCap = "round";
 ctx.strokeStyle = "black";
 
 // Set drawing handler
 let drawing = false;
+let current_thickness = 2;
 
 // Set up line objects
 const lines: Display[] = [];
@@ -83,7 +86,7 @@ canvas.addEventListener("drawing-changed", () => {
 // Mouse clicked = draw
 canvas.addEventListener("mousedown", (event: MouseEvent) => {
   drawing = true;
-  current_line = MarkerLine(event.offsetX, event.offsetY);
+  current_line = MarkerLine(event.offsetX, event.offsetY, current_thickness);
   lines.push(current_line);
   canvas.dispatchEvent(new Event("drawing-changed"));
 });
@@ -108,6 +111,11 @@ canvas.addEventListener("mouseleave", () => {
   drawing = false;
   current_line = null;
 });
+
+// Make buttons appear below canvas
+const buttonContainer = document.createElement("div");
+buttonContainer.className = "button-container";
+document.body.appendChild(buttonContainer);
 
 // Clear button
 const clearButton = document.createElement("button");
@@ -143,4 +151,35 @@ redoButton.addEventListener("click", () => {
     lines.push(redo_lines.pop()!);
     redraw();
   }
+});
+
+// Tool selection buttons
+const toolsContainer = document.createElement("div");
+toolsContainer.className = "tools-container";
+document.body.appendChild(toolsContainer);
+
+const thinButton = document.createElement("button");
+thinButton.textContent = "Thin";
+thinButton.classList.add("selectedTool");
+toolsContainer.appendChild(thinButton);
+
+const thickButton = document.createElement("button");
+thickButton.textContent = "Thick";
+toolsContainer.appendChild(thickButton);
+
+// Tool switching
+function selectTool(thickness: number, selectedButton: HTMLButtonElement) {
+  current_thickness = thickness;
+  [thinButton, thickButton].forEach((btn) =>
+    btn.classList.remove("selectedTool")
+  );
+  selectedButton.classList.add("selectedTool");
+}
+
+thinButton.addEventListener("click", () => {
+  selectTool(2, thinButton);
+});
+
+thickButton.addEventListener("click", () => {
+  selectTool(6, thickButton);
 });
