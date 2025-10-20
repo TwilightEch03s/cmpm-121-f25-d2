@@ -35,6 +35,25 @@ function MarkerLine(x: number, y: number, thickness: number): Display {
   };
 }
 
+// Tool preview
+interface ToolPreview {
+  display(ctx: CanvasRenderingContext2D): void;
+}
+
+function MarkerPreview(x: number, y: number, thickness: number): ToolPreview {
+  return {
+    display(ctx) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = "gray";
+      ctx.arc(x, y, thickness / 2, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    },
+  };
+}
+
 // Create title
 const title = document.createElement("h1");
 title.textContent = "Sticker Sketchpad";
@@ -68,12 +87,21 @@ const lines: Display[] = [];
 let current_line: Display | null = null;
 const redo_lines: Display[] = [];
 
+// Tool preview
+let current_tool_preview: ToolPreview | null = null;
+
 //Redraw lines
 function redraw() {
   if (ctx) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     for (const line of lines) {
       line.display(ctx);
+    }
+  }
+  // Draw tool preview only if not drawing
+  if (!drawing && current_tool_preview) {
+    if (ctx) {
+      current_tool_preview.display(ctx);
     }
   }
 }
@@ -83,21 +111,33 @@ canvas.addEventListener("drawing-changed", () => {
   redraw();
 });
 
+// Observer for "tool-moved"
+canvas.addEventListener("tool-moved", () => {
+  redraw();
+});
+
 // Mouse clicked = draw
 canvas.addEventListener("mousedown", (event: MouseEvent) => {
   drawing = true;
   current_line = MarkerLine(event.offsetX, event.offsetY, current_thickness);
   lines.push(current_line);
+  current_tool_preview = null;
   canvas.dispatchEvent(new Event("drawing-changed"));
 });
 
 // Mouse move = draw line at mouse postion
 canvas.addEventListener("mousemove", (event: MouseEvent) => {
-  if (!drawing || !current_line) {
-    return;
+  if (drawing && current_line) {
+    current_line.drag(event.offsetX, event.offsetY);
+    canvas.dispatchEvent(new Event("drawing-changed"));
+  } else {
+    current_tool_preview = MarkerPreview(
+      event.offsetX,
+      event.offsetY,
+      current_thickness,
+    );
+    canvas.dispatchEvent(new Event("tool-moved"));
   }
-  current_line.drag(event.offsetX, event.offsetY);
-  canvas.dispatchEvent(new Event("drawing-changed"));
 });
 
 // If mouse is released, stop drawing
@@ -110,6 +150,7 @@ canvas.addEventListener("mouseup", () => {
 canvas.addEventListener("mouseleave", () => {
   drawing = false;
   current_line = null;
+  current_tool_preview = null;
 });
 
 // Make buttons appear below canvas
