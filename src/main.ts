@@ -1,5 +1,37 @@
 import "./style.css";
 
+// Display Interface
+interface Display {
+  drag(x: number, y: number): void;
+  display(ctx: CanvasRenderingContext2D): void;
+  getPoints(): { x: number; y: number }[];
+}
+
+//Make a marker line
+function MarkerLine(x: number, y: number): Display {
+  const points = [{ x, y }];
+
+  return {
+    drag(newX, newY) {
+      points.push({ x: newX, y: newY });
+    },
+    display(ctx) {
+      if (points.length == 0) {
+        return;
+      }
+      ctx.beginPath();
+      ctx.moveTo(points[0].x, points[0].y);
+      for (let i = 1; i < points.length; i++) {
+        ctx.lineTo(points[i].x, points[i].y);
+      }
+      ctx.stroke();
+    },
+    getPoints() {
+      return points;
+    },
+  };
+}
+
 // Create title
 const title = document.createElement("h1");
 title.textContent = "Sticker Sketchpad";
@@ -28,24 +60,17 @@ ctx.strokeStyle = "black";
 // Set drawing handler
 let drawing = false;
 
-// Set up points
-const points: { x: number; y: number }[][] = [];
-let current_point: { x: number; y: number }[] = [];
+// Set up line objects
+const lines: Display[] = [];
+let current_line: Display | null = null;
+const redo_lines: Display[] = [];
 
 //Redraw lines
 function redraw() {
   if (ctx) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    for (const line of points) {
-      if (line.length == 0) {
-        continue;
-      }
-      ctx.beginPath();
-      ctx.moveTo(line[0].x, line[0].y);
-      for (let i = 1; i < line.length; i++) {
-        ctx.lineTo(line[i].x, line[i].y);
-        ctx.stroke();
-      }
+    for (const line of lines) {
+      line.display(ctx);
     }
   }
 }
@@ -58,32 +83,31 @@ canvas.addEventListener("drawing-changed", () => {
 // Mouse clicked = draw
 canvas.addEventListener("mousedown", (event: MouseEvent) => {
   drawing = true;
-  current_point = [{ x: event.offsetX, y: event.offsetY }];
-  points.push(current_point);
+  current_line = MarkerLine(event.offsetX, event.offsetY);
+  lines.push(current_line);
   canvas.dispatchEvent(new Event("drawing-changed"));
 });
 
 // Mouse move = draw line at mouse postion
 canvas.addEventListener("mousemove", (event: MouseEvent) => {
-  if (!drawing) {
+  if (!drawing || !current_line) {
     return;
   }
-  current_point.push({ x: event.offsetX, y: event.offsetY });
+  current_line.drag(event.offsetX, event.offsetY);
   canvas.dispatchEvent(new Event("drawing-changed"));
 });
 
 // If mouse is released, stop drawing
 canvas.addEventListener("mouseup", () => {
   drawing = false;
+  current_line = null;
 });
 
 // If mouse exits canvas, stop drawing
 canvas.addEventListener("mouseleave", () => {
   drawing = false;
+  current_line = null;
 });
-
-// Setup redo lines if user wants to undo/redo
-const redo_lines: { x: number; y: number }[][] = [];
 
 // Clear button
 const clearButton = document.createElement("button");
@@ -92,7 +116,7 @@ document.body.appendChild(clearButton);
 
 clearButton.addEventListener("click", () => {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  points.length = 0;
+  lines.length = 0;
   redo_lines.length = 0;
   canvas.dispatchEvent(new Event("drawing-changed"));
 });
@@ -103,8 +127,8 @@ undoButton.textContent = "Undo";
 document.body.appendChild(undoButton);
 
 undoButton.addEventListener("click", () => {
-  if (points.length > 0) {
-    redo_lines.push(points.pop()!);
+  if (lines.length > 0) {
+    redo_lines.push(lines.pop()!);
     redraw();
   }
 });
@@ -116,7 +140,7 @@ document.body.appendChild(redoButton);
 
 redoButton.addEventListener("click", () => {
   if (redo_lines.length > 0) {
-    points.push(redo_lines.pop()!);
+    lines.push(redo_lines.pop()!);
     redraw();
   }
 });
