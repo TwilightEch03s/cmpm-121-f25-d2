@@ -281,21 +281,43 @@ thickButton.addEventListener("click", () => {
   selectTool(6, thickButton);
 });
 
-// Add sticker buttons
+// Sticker container
 const stickerContainer = document.createElement("div");
 stickerContainer.className = "sticker-container";
 document.body.appendChild(stickerContainer);
 
-const stickers = ["🌼", "🌸", "🌺"];
-stickers.forEach((emoji) => {
-  const btn = document.createElement("button");
-  btn.textContent = emoji;
-  btn.classList.add("stickerButton");
-  stickerContainer.appendChild(btn);
+// Stickers
+const stickers: string[] = ["🌼", "🌸", "🌺"];
 
-  btn.addEventListener("click", () => {
-    current_sticker = emoji;
-    current_tool_preview = null;
-    canvas.dispatchEvent(new Event("tool-moved"));
+// Function to rebuild sticker buttons
+function renderStickerButtons() {
+  stickerContainer.innerHTML = "";
+  stickers.forEach((emoji) => {
+    const btn = document.createElement("button");
+    btn.textContent = emoji;
+    btn.classList.add("stickerButton");
+    stickerContainer.appendChild(btn);
+
+    btn.addEventListener("click", () => {
+      current_sticker = emoji;
+      current_tool_preview = null;
+      canvas.dispatchEvent(new Event("tool-moved"));
+    });
   });
+}
+
+// Add custom sticker button
+const addStickerButton = document.createElement("button");
+addStickerButton.textContent = "Add Sticker";
+addStickerButton.classList.add("stickerButton");
+document.body.appendChild(addStickerButton);
+
+addStickerButton.addEventListener("click", () => {
+  const customEmoji = prompt("Custom sticker text", "🧽");
+  if (customEmoji) {
+    stickers.push(customEmoji);
+    renderStickerButtons();
+  }
 });
+
+renderStickerButtons();
