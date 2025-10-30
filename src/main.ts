@@ -321,3 +321,31 @@ addStickerButton.addEventListener("click", () => {
 });
 
 renderStickerButtons();
+
+// Add export button
+const addExportButton = document.createElement("button");
+addExportButton.textContent = "Export";
+addExportButton.classList.add("exportButton");
+buttonContainer.appendChild(addExportButton);
+
+addExportButton.addEventListener("click", () => {
+  const exportCanvas = document.createElement("canvas");
+  exportCanvas.width = 1024;
+  exportCanvas.height = 1024;
+  const exportCtx = exportCanvas.getContext("2d");
+
+  if (!exportCtx) {
+    throw new Error("Unable to get export canvas context");
+  }
+
+  exportCtx.scale(4, 4);
+  for (const line of lines) {
+    line.display(exportCtx);
+  }
+
+  // Download image
+  const anchor = document.createElement("a");
+  anchor.href = exportCanvas.toDataURL("image/png");
+  anchor.download = "sketchpad.png";
+  anchor.click();
+});
