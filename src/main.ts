@@ -45,8 +45,23 @@ interface Display {
   thickness: number;
 }
 
+// Random color
+function randomColor(): string {
+  const colors = ["red", "blue", "green", "purple", "orange", "black", "gray"];
+  return colors[Math.floor(Math.random() * colors.length)];
+}
+
+function randomRotation(): number {
+  return Math.random() * 360; // degrees
+}
+
 //Make a marker line
-function MarkerLine(x: number, y: number, thickness: number): Display {
+function MarkerLine(
+  x: number,
+  y: number,
+  thickness: number,
+  color: string,
+): Display {
   const points = [{ x, y }];
 
   return {
@@ -64,6 +79,7 @@ function MarkerLine(x: number, y: number, thickness: number): Display {
         ctx.lineTo(points[i].x, points[i].y);
       }
       ctx.lineWidth = thickness;
+      ctx.strokeStyle = color;
       ctx.stroke();
     },
     getPoints() {
@@ -86,7 +102,7 @@ function MarkerPreview(x: number, y: number, thickness: number): ToolPreview {
       ctx.save();
       ctx.beginPath();
       ctx.lineWidth = 1;
-      ctx.strokeStyle = "gray";
+      ctx.strokeStyle = "black";
       ctx.arc(x, y, thickness / 2, 0, Math.PI * 2);
       ctx.stroke();
       ctx.restore();
@@ -121,6 +137,7 @@ ctx.strokeStyle = "black";
 // Set drawing handler
 let drawing = false;
 let current_thickness = 3;
+let current_color = randomColor();
 
 // Set up line objects
 const lines: Display[] = [];
@@ -165,7 +182,12 @@ canvas.addEventListener("mousedown", (event: MouseEvent) => {
     canvas.dispatchEvent(new Event("drawing-changed"));
   } else {
     drawing = true;
-    current_line = MarkerLine(event.offsetX, event.offsetY, current_thickness);
+    current_line = MarkerLine(
+      event.offsetX,
+      event.offsetY,
+      current_thickness,
+      current_color,
+    );
     lines.push(current_line);
     current_tool_preview = null;
     canvas.dispatchEvent(new Event("drawing-changed"));
@@ -304,13 +326,14 @@ function selectTool(thickness: number, selectedButton: HTMLButtonElement) {
   selectedButton.classList.add("selectedTool");
 }
 
-thinButton.addEventListener("click", () => {
-  selectTool(2, thinButton);
-});
+function randomizeTool(button: HTMLButtonElement, thickness: number) {
+  current_color = randomColor();
+  button.style.backgroundColor = current_color;
+  selectTool(thickness, button);
+}
 
-thickButton.addEventListener("click", () => {
-  selectTool(6, thickButton);
-});
+thinButton.addEventListener("click", () => randomizeTool(thinButton, 2));
+thickButton.addEventListener("click", () => randomizeTool(thickButton, 6));
 
 // Sticker container
 const stickerContainer = document.createElement("div");
