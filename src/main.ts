@@ -120,7 +120,7 @@ ctx.strokeStyle = "black";
 
 // Set drawing handler
 let drawing = false;
-let current_thickness = 2;
+let current_thickness = 3;
 
 // Set up line objects
 const lines: Display[] = [];
@@ -215,7 +215,8 @@ document.body.appendChild(buttonContainer);
 // Clear button
 const clearButton = document.createElement("button");
 clearButton.textContent = "Clear";
-document.body.appendChild(clearButton);
+clearButton.className = "commands";
+buttonContainer.appendChild(clearButton);
 
 clearButton.addEventListener("click", () => {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -227,7 +228,8 @@ clearButton.addEventListener("click", () => {
 // Undo button
 const undoButton = document.createElement("button");
 undoButton.textContent = "Undo";
-document.body.appendChild(undoButton);
+undoButton.className = "commands";
+buttonContainer.appendChild(undoButton);
 
 undoButton.addEventListener("click", () => {
   if (lines.length > 0) {
@@ -239,13 +241,42 @@ undoButton.addEventListener("click", () => {
 // Redo button
 const redoButton = document.createElement("button");
 redoButton.textContent = "Redo";
-document.body.appendChild(redoButton);
+clearButton.className = "commands";
+buttonContainer.appendChild(redoButton);
 
 redoButton.addEventListener("click", () => {
   if (redo_lines.length > 0) {
     lines.push(redo_lines.pop()!);
     redraw();
   }
+});
+
+// Add export button
+const exportButton = document.createElement("button");
+exportButton.textContent = "Export";
+exportButton.classList.add("commands");
+buttonContainer.appendChild(exportButton);
+
+exportButton.addEventListener("click", () => {
+  const exportCanvas = document.createElement("canvas");
+  exportCanvas.width = 1024;
+  exportCanvas.height = 1024;
+  const exportCtx = exportCanvas.getContext("2d");
+
+  if (!exportCtx) {
+    throw new Error("Unable to get export canvas context");
+  }
+
+  exportCtx.scale(4, 4);
+  for (const line of lines) {
+    line.display(exportCtx);
+  }
+
+  // Download image
+  const anchor = document.createElement("a");
+  anchor.href = exportCanvas.toDataURL("image/png");
+  anchor.download = "sketchpad.png";
+  anchor.click();
 });
 
 // Tool selection buttons
@@ -287,7 +318,7 @@ stickerContainer.className = "sticker-container";
 document.body.appendChild(stickerContainer);
 
 // Stickers
-const stickers: string[] = ["🌼", "🌸", "🌺"];
+const stickers: string[] = ["🌼", "🌸", "🌺", "💐", "🌼", "🌹"];
 
 // Function to rebuild sticker buttons
 function renderStickerButtons() {
@@ -309,7 +340,7 @@ function renderStickerButtons() {
 // Add custom sticker button
 const addStickerButton = document.createElement("button");
 addStickerButton.textContent = "Add Sticker";
-addStickerButton.classList.add("stickerButton");
+addStickerButton.classList.add("addStickerButton");
 document.body.appendChild(addStickerButton);
 
 addStickerButton.addEventListener("click", () => {
@@ -321,31 +352,3 @@ addStickerButton.addEventListener("click", () => {
 });
 
 renderStickerButtons();
-
-// Add export button
-const addExportButton = document.createElement("button");
-addExportButton.textContent = "Export";
-addExportButton.classList.add("exportButton");
-buttonContainer.appendChild(addExportButton);
-
-addExportButton.addEventListener("click", () => {
-  const exportCanvas = document.createElement("canvas");
-  exportCanvas.width = 1024;
-  exportCanvas.height = 1024;
-  const exportCtx = exportCanvas.getContext("2d");
-
-  if (!exportCtx) {
-    throw new Error("Unable to get export canvas context");
-  }
-
-  exportCtx.scale(4, 4);
-  for (const line of lines) {
-    line.display(exportCtx);
-  }
-
-  // Download image
-  const anchor = document.createElement("a");
-  anchor.href = exportCanvas.toDataURL("image/png");
-  anchor.download = "sketchpad.png";
-  anchor.click();
-});
