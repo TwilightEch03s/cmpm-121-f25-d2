@@ -51,10 +51,6 @@ function randomColor(): string {
   return colors[Math.floor(Math.random() * colors.length)];
 }
 
-function randomRotation(): number {
-  return Math.random() * 360; // degrees
-}
-
 //Make a marker line
 function MarkerLine(
   x: number,
